@@ -81,29 +81,37 @@ export function SalesSummaryTable({
     setCommissionMessage("");
     setCommissionError("");
 
-    const updatedButtons = saleButtons.map((button) => ({
-      ...button,
-      commission_amount: parseCommissionAmount(amountDrafts[button.id] ?? "0"),
-    }));
+    try {
+      const updatedButtons = saleButtons.map((button) => ({
+        ...button,
+        label: button.label.trim(),
+        amount: Number(button.amount) || 0,
+        commission_amount: parseCommissionAmount(amountDrafts[button.id] ?? "0"),
+      }));
 
-    const response = await fetch("/api/settings", {
-      method: "PATCH",
-      credentials: "include",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ saleButtons: updatedButtons }),
-    });
+      const response = await fetch("/api/settings", {
+        method: "PATCH",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ saleButtons: updatedButtons }),
+      });
 
-    setSavingCommission(false);
+      if (!response.ok) {
+        const data = (await response.json()) as { error?: string };
+        setCommissionError(data.error ?? "Could not save commission amounts.");
+        return;
+      }
 
-    if (!response.ok) {
-      const data = (await response.json()) as { error?: string };
-      setCommissionError(data.error ?? "Could not save commission amounts.");
-      return;
+      const data = (await response.json()) as { saleButtons: SaleButton[] };
+      onSaleButtonsUpdated(data.saleButtons);
+      setCommissionMessage("Commission amounts saved.");
+    } catch {
+      setCommissionError(
+        "Could not save commission amounts. Check your connection and try again.",
+      );
+    } finally {
+      setSavingCommission(false);
     }
-
-    const data = (await response.json()) as { saleButtons: SaleButton[] };
-    onSaleButtonsUpdated(data.saleButtons);
-    setCommissionMessage("Commission amounts saved.");
   }
 
   return (

@@ -73,6 +73,18 @@ export function createEmptySaleButton(): SaleButton {
   };
 }
 
+/** Ensure every button has a valid commission_amount before save/display. */
+export function withCommissionAmount(button: SaleButton): SaleButton {
+  const commission_amount = Number(button.commission_amount);
+  return {
+    ...button,
+    commission_amount:
+      Number.isFinite(commission_amount) && commission_amount >= 0
+        ? commission_amount
+        : 0,
+  };
+}
+
 export function mergeSaleButtons(stored: unknown): SaleButton[] {
   if (!Array.isArray(stored)) return [...DEFAULT_SALE_BUTTONS];
 

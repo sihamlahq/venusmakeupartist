@@ -51,12 +51,25 @@ export async function DELETE(
   if (!(await isAdminAuthenticated())) return unauthorized();
 
   const { id } = await context.params;
+  if (!id?.trim()) {
+    return NextResponse.json({ error: "Missing sale id." }, { status: 400 });
+  }
+
   const supabase = createServiceClient();
-  const { error } = await supabase.from("sales").delete().eq("id", id);
+  const { data, error } = await supabase
+    .from("sales")
+    .delete()
+    .eq("id", id)
+    .select("id")
+    .maybeSingle();
 
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 
-  return NextResponse.json({ ok: true });
+  if (!data) {
+    return NextResponse.json({ error: "Sale not found." }, { status: 404 });
+  }
+
+  return NextResponse.json({ ok: true, id: data.id });
 }

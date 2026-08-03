@@ -86,6 +86,7 @@ export function SalesDashboard() {
 
     const response = await fetch(`/api/sales?${params.toString()}`, {
       cache: "no-store",
+      credentials: "include",
     });
 
     if (!response.ok) {
@@ -133,14 +134,25 @@ export function SalesDashboard() {
   }
 
   async function onDelete(id: string) {
-    const response = await fetch(`/api/sales/${id}`, { method: "DELETE" });
-    if (!response.ok) return;
-    await loadSales();
+    try {
+      const response = await fetch(`/api/sales/${id}`, {
+        method: "DELETE",
+        credentials: "include",
+      });
+
+      if (!response.ok) return false;
+
+      await loadSales();
+      return true;
+    } catch {
+      return false;
+    }
   }
 
   async function onUpdate(id: string, input: SaleUpdateInput) {
     const response = await fetch(`/api/sales/${id}`, {
       method: "PATCH",
+      credentials: "include",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(input),
     });

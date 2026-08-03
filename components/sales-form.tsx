@@ -36,34 +36,39 @@ export function SalesForm({ saleButtons, onCreated, className = "" }: Props) {
     if (activeId) return;
 
     const quantity = Math.max(1, Math.min(qty, 10));
-    const total = preset.amount * quantity;
+    const total = Number(preset.amount) * quantity;
 
     setError("");
     setActiveId(preset.id);
 
-    const response = await fetch("/api/sales", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        client_name: "",
-        service: quantity > 1 ? `${preset.label} ×${quantity}` : preset.label,
-        amount: total,
-        notes: "",
-      }),
-    });
+    try {
+      const response = await fetch("/api/sales", {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          client_name: "",
+          service: quantity > 1 ? `${preset.label} ×${quantity}` : preset.label,
+          amount: total,
+          notes: "",
+        }),
+      });
 
-    setActiveId(null);
+      if (!response.ok) {
+        const data = (await response.json()) as { error?: string };
+        setError(data.error ?? "Could not save sale.");
+        return;
+      }
 
-    if (!response.ok) {
-      const data = (await response.json()) as { error?: string };
-      setError(data.error ?? "Could not save sale.");
-      return;
+      const data = (await response.json()) as { sale: Sale };
+      setPending(null);
+      setQuantity(1);
+      onCreated(data.sale);
+    } catch {
+      setError("Could not save sale. Check your connection and try again.");
+    } finally {
+      setActiveId(null);
     }
-
-    const data = (await response.json()) as { sale: Sale };
-    setPending(null);
-    setQuantity(1);
-    onCreated(data.sale);
   }
 
   return (
@@ -149,8 +154,10 @@ export function SalesForm({ saleButtons, onCreated, className = "" }: Props) {
             </div>
 
             <p className="mt-4 text-sm font-medium text-rose-950">
-              Total: {formatMoney(pending.amount * quantity)}
+              Total: {formatMoney(Number(pending.amount) * quantity)}
             </p>
+
+            {error ? <p className="mt-3 text-sm text-rose-700">{error}</p> : null}
 
             <div className="mt-5 flex gap-2">
               <button

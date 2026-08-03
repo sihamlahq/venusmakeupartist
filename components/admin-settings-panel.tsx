@@ -10,6 +10,7 @@ import type { SaleButton } from "@/lib/sale-buttons";
 import {
   MAX_SALE_BUTTONS,
   createEmptySaleButton,
+  withCommissionAmount,
 } from "@/lib/sale-buttons";
 
 type Props = {
@@ -40,15 +41,17 @@ export function AdminSettingsPanel({
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
   const [savingSaleButtons, setSavingSaleButtons] = useState(false);
+  const [confirmSaveButtons, setConfirmSaveButtons] = useState(false);
   const [savingWhatsApp, setSavingWhatsApp] = useState(false);
   const [savingWebsitePackages, setSavingWebsitePackages] = useState(false);
   const [savingPassword, setSavingPassword] = useState(false);
 
   function openPanel() {
-    setDraftSaleButtons(saleButtons);
+    setDraftSaleButtons(saleButtons.map(withCommissionAmount));
     setDraftWhatsApp(whatsappNumber);
     setDraftWebsitePackages(websitePackages);
     setOpen(true);
+    setConfirmSaveButtons(false);
     setMessage("");
     setError("");
   }
@@ -97,30 +100,74 @@ export function AdminSettingsPanel({
     });
   }
 
+  function prepareSaleButtonsForSave() {
+    const cleaned = draftSaleButtons
+      .map((button) => ({
+        id: button.id,
+        label: button.label.trim(),
+        amount: Number.isFinite(Number(button.amount)) ? Number(button.amount) : 0,
+        commission_amount: Number.isFinite(Number(button.commission_amount))
+          ? Number(button.commission_amount)
+          : 0,
+      }))
+      .filter((button) => button.label.length > 0);
+
+    if (cleaned.length === 0) {
+      throw new Error("Give each button a name, or remove empty rows.");
+    }
+
+    return cleaned;
+  }
+
+  function requestSaveSaleButtons() {
+    setMessage("");
+    setError("");
+
+    try {
+      prepareSaleButtonsForSave();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Could not save sale buttons.");
+      return;
+    }
+
+    setConfirmSaveButtons(true);
+  }
+
   async function saveSaleButtons() {
     setSavingSaleButtons(true);
     setMessage("");
     setError("");
 
-    const response = await fetch("/api/settings", {
-      method: "PATCH",
-      credentials: "include",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ saleButtons: draftSaleButtons }),
-    });
+    try {
+      const payload = prepareSaleButtonsForSave();
 
-    setSavingSaleButtons(false);
+      const response = await fetch("/api/settings", {
+        method: "PATCH",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ saleButtons: payload }),
+      });
 
-    if (!response.ok) {
-      const data = (await response.json()) as { error?: string };
-      setError(data.error ?? "Could not save sale buttons.");
-      return;
+      if (!response.ok) {
+        const data = (await response.json()) as { error?: string };
+        setError(data.error ?? "Could not save sale buttons.");
+        return;
+      }
+
+      const data = (await response.json()) as { saleButtons: SaleButton[] };
+      onSaleButtonsUpdated(data.saleButtons);
+      setDraftSaleButtons(data.saleButtons);
+      setConfirmSaveButtons(false);
+      setMessage("Sale buttons updated.");
+    } catch (err) {
+      setError(
+        err instanceof Error
+          ? err.message
+          : "Could not save sale buttons. Check your connection and try again.",
+      );
+    } finally {
+      setSavingSaleButtons(false);
     }
-
-    const data = (await response.json()) as { saleButtons: SaleButton[] };
-    onSaleButtonsUpdated(data.saleButtons);
-    setDraftSaleButtons(data.saleButtons);
-    setMessage("Sale buttons updated.");
   }
 
   function updateWebsitePackage(
@@ -415,7 +462,7 @@ export function AdminSettingsPanel({
                 </button>
                 <button
                   type="button"
-                  onClick={() => void saveSaleButtons()}
+                  onClick={requestSaveSaleButtons}
                   disabled={savingSaleButtons}
                   className="w-full rounded-xl bg-rose-900 px-4 py-3 text-sm font-medium text-white disabled:opacity-60 sm:w-auto"
                 >
@@ -525,6 +572,53 @@ export function AdminSettingsPanel({
                 {savingPassword ? "Updating..." : "Update password"}
               </button>
             </section>
+          </div>
+        </div>
+      ) : null}
+
+      {confirmSaveButtons ? (
+        <div
+          className="fixed inset-0 z-[60] flex items-end justify-center bg-espresso/40 p-0 sm:items-center sm:p-4"
+          onClick={() => {
+            if (!savingSaleButtons) setConfirmSaveButtons(false);
+          }}
+        >
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="save-sale-buttons-title"
+            className="w-full max-w-sm rounded-t-[2rem] border border-rose-100 bg-white p-5 shadow-2xl sm:rounded-[2rem] sm:p-6"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <h3
+              id="save-sale-buttons-title"
+              className="font-serif text-xl text-rose-950 sm:text-2xl"
+            >
+              Save sale buttons?
+            </h3>
+            <p className="mt-2 text-sm text-rose-800/70">
+              Renamed names, prices, and commission amounts will update on the
+              Record a sale screen.
+            </p>
+            {error ? <p className="mt-3 text-sm text-rose-700">{error}</p> : null}
+            <div className="mt-5 flex gap-2">
+              <button
+                type="button"
+                disabled={savingSaleButtons}
+                onClick={() => setConfirmSaveButtons(false)}
+                className="flex-1 rounded-2xl border border-rose-200 px-4 py-2.5 text-sm font-medium text-rose-800 disabled:opacity-50"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                disabled={savingSaleButtons}
+                onClick={() => void saveSaleButtons()}
+                className="flex-1 rounded-2xl bg-rose-900 px-4 py-2.5 text-sm font-medium text-white disabled:opacity-50"
+              >
+                {savingSaleButtons ? "Saving…" : "Confirm save"}
+              </button>
+            </div>
           </div>
         </div>
       ) : null}
