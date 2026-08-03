@@ -40,10 +40,48 @@ body {
   line-height: 1.65;
   letter-spacing: 0.01em;
   overflow-x: hidden;
+  overscroll-behavior-y: contain;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   text-rendering: optimizeLegibility;
   -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+
+/* Prevent iOS Safari auto-zoom on focus (requires ≥16px). */
+@media (max-width: 639px) {
+  input,
+  select,
+  textarea {
+    font-size: 16px !important;
+  }
+}
+
+.admin-safe-pad {
+  padding-left: max(0.75rem, env(safe-area-inset-left));
+  padding-right: max(0.75rem, env(safe-area-inset-right));
+  padding-bottom: max(1.5rem, env(safe-area-inset-bottom));
+  padding-top: max(1.5rem, env(safe-area-inset-top));
+}
+
+@media (min-width: 640px) {
+  .admin-safe-pad {
+    padding-left: 1rem;
+    padding-right: 1rem;
+    padding-top: 2.5rem;
+    padding-bottom: 2.5rem;
+  }
+}
+
+.pull-refresh-indicator {
+  pointer-events: none;
+  position: fixed;
+  left: 0;
+  right: 0;
+  top: calc(env(safe-area-inset-top, 0px) + 0.5rem);
+  z-index: 60;
+  display: flex;
+  justify-content: center;
 }
 
 .font-serif {

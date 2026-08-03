@@ -47,7 +47,7 @@ export function AdminLoginForm({ nextPath }: { nextPath: string }) {
           type="password"
           value={password}
           onChange={(event) => setPassword(event.target.value)}
-          className="w-full rounded-xl border border-rose-200 bg-white px-4 py-3 outline-none ring-rose-300 focus:ring-2"
+          className="w-full min-h-12 rounded-xl border border-rose-200 bg-white px-4 py-3 text-base outline-none ring-rose-300 focus:ring-2"
           placeholder="Enter your password"
           required
         />

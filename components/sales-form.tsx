@@ -91,7 +91,7 @@ export function SalesForm({ saleButtons, onCreated, className = "" }: Props) {
               type="button"
               disabled={disabled}
               onClick={() => openConfirm(preset)}
-              className="flex min-h-[3.25rem] items-center justify-between gap-3 rounded-2xl border border-rose-200 bg-white px-4 py-3 text-left transition hover:border-rose-400 hover:bg-rose-50/80 disabled:opacity-50"
+              className="flex min-h-12 items-center justify-between gap-3 rounded-2xl border border-rose-200 bg-white px-4 py-3 text-left transition hover:border-rose-400 hover:bg-rose-50/80 disabled:opacity-50"
             >
               <span className="min-w-0 text-sm font-medium leading-snug text-rose-950 sm:text-base">
                 {busy ? "Saving…" : preset.label}
@@ -115,7 +115,7 @@ export function SalesForm({ saleButtons, onCreated, className = "" }: Props) {
             role="dialog"
             aria-modal="true"
             aria-labelledby="record-sale-title"
-            className="w-full max-w-md rounded-t-[2rem] border border-rose-100 bg-white p-5 shadow-2xl sm:rounded-[2rem] sm:p-6"
+            className="w-full max-w-md rounded-t-[2rem] border border-rose-100 bg-white p-5 pb-[max(1.25rem,env(safe-area-inset-bottom))] shadow-2xl sm:rounded-[2rem] sm:p-6"
             onClick={(event) => event.stopPropagation()}
           >
             <h3

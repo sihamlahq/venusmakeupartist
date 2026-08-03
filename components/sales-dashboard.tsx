@@ -23,6 +23,7 @@ import { SalesDateFilter } from "@/components/sales-date-filter";
 import { SalesForm } from "@/components/sales-form";
 import { SalesSummaryTable } from "@/components/sales-summary-table";
 import { SalesTable } from "@/components/sales-table";
+import { usePullToRefresh } from "@/hooks/use-pull-to-refresh";
 
 export function SalesDashboard() {
   const [preset, setPreset] = useState<DateRangePreset>("today");
@@ -123,6 +124,14 @@ export function SalesDashboard() {
     return () => window.clearInterval(interval);
   }, [loadSales]);
 
+  const refreshAll = useCallback(async () => {
+    await Promise.all([loadSettings(), loadSales()]);
+  }, [loadSettings, loadSales]);
+
+  const { pullDistance, refreshing, ready } = usePullToRefresh({
+    onRefresh: refreshAll,
+  });
+
   function onCreated(sale: Sale) {
     const soldAt = sale.sold_at.slice(0, 10);
     if (soldAt >= range.from && soldAt <= range.to) {
@@ -180,15 +189,34 @@ export function SalesDashboard() {
   }
 
   const isTodayView = preset === "today";
+  const showPullIndicator = pullDistance > 8 || refreshing;
 
   return (
-    <div className="mx-auto w-full min-w-0 max-w-6xl px-3 py-6 sm:px-4 sm:py-10">
-      <div className="mb-6 flex items-start justify-between gap-3 sm:mb-8">
+    <div className="admin-safe-pad mx-auto w-full min-w-0 max-w-6xl">
+      {showPullIndicator ? (
+        <div className="pull-refresh-indicator" aria-live="polite">
+          <div
+            className="rounded-full border border-rose-200 bg-white/95 px-4 py-2 text-sm text-rose-900 shadow-sm"
+            style={{
+              opacity: refreshing ? 1 : Math.min(0.35 + pullDistance / 72, 1),
+              transform: `translateY(${Math.min(pullDistance * 0.35, 28)}px)`,
+            }}
+          >
+            {refreshing
+              ? "Refreshing…"
+              : ready
+                ? "Release to refresh"
+                : "Pull to refresh"}
+          </div>
+        </div>
+      ) : null}
+
+      <div className="mb-5 flex items-start justify-between gap-3 sm:mb-8">
         <div className="min-w-0 flex-1">
           <p className="text-xs uppercase tracking-[0.2em] text-rose-700 sm:text-sm">
             Live sales ledger
           </p>
-          <h1 className="font-serif text-2xl text-rose-950 sm:text-3xl md:text-4xl">
+          <h1 className="font-serif text-2xl leading-tight text-rose-950 sm:text-3xl md:text-4xl">
             Venus Admin
           </h1>
           <p className="mt-2 break-words text-sm text-rose-800/70">
@@ -208,37 +236,42 @@ export function SalesDashboard() {
         </div>
       </div>
 
-      <SalesForm saleButtons={saleButtons} onCreated={onCreated} className="mb-6 lg:hidden" />
+      <SalesForm saleButtons={saleButtons} onCreated={onCreated} className="mb-5 lg:hidden" />
 
-      <div className="mb-6 grid gap-3 sm:mb-8 sm:gap-4 md:grid-cols-3">
-        <div className="rounded-3xl border border-rose-100 bg-white/80 p-4 shadow-sm sm:p-6">
-          <p className="text-sm text-rose-800/70">
+      <div className="mb-5 grid grid-cols-2 gap-3 sm:mb-8 sm:gap-4 md:grid-cols-3">
+        <div className="rounded-3xl border border-rose-100 bg-white/80 p-3.5 shadow-sm sm:p-6">
+          <p className="text-xs text-rose-800/70 sm:text-sm">
             {isTodayView ? "Today's total" : "Period total"}
           </p>
-          <p className="mt-2 break-words font-serif text-2xl text-rose-950 sm:text-3xl">
+          <p className="mt-1.5 break-words font-serif text-xl leading-tight text-rose-950 sm:mt-2 sm:text-3xl">
             {formatMoney(total)}
           </p>
         </div>
-        <div className="rounded-3xl border border-rose-100 bg-white/80 p-4 shadow-sm sm:p-6">
-          <p className="text-sm text-rose-800/70">
+        <div className="rounded-3xl border border-rose-100 bg-white/80 p-3.5 shadow-sm sm:p-6">
+          <p className="text-xs text-rose-800/70 sm:text-sm">
             {isTodayView ? "Today's sales" : "Sales count"}
           </p>
-          <p className="mt-2 font-serif text-2xl text-rose-950 sm:text-3xl">{count}</p>
-        </div>
-        <div className="rounded-3xl border border-rose-100 bg-white/80 p-4 shadow-sm sm:p-6">
-          <p className="text-sm text-rose-800/70">Live status</p>
-          <p className="mt-2 font-serif text-2xl text-rose-950 sm:text-3xl">
-            {loading ? "Syncing" : "Live"}
+          <p className="mt-1.5 font-serif text-xl leading-tight text-rose-950 sm:mt-2 sm:text-3xl">
+            {count}
           </p>
-          <p className="mt-2 text-xs text-rose-800/60">
+        </div>
+        <div className="col-span-2 rounded-3xl border border-rose-100 bg-white/80 p-3.5 shadow-sm sm:p-6 md:col-span-1">
+          <p className="text-xs text-rose-800/70 sm:text-sm">Live status</p>
+          <p className="mt-1.5 font-serif text-xl leading-tight text-rose-950 sm:mt-2 sm:text-3xl">
+            {loading || refreshing ? "Syncing" : "Live"}
+          </p>
+          <p className="mt-1.5 text-xs text-rose-800/60">
             {lastUpdated
               ? `Updated ${lastUpdated.toLocaleTimeString("en-MY")}`
               : "Waiting for first sync"}
+            <span className="mt-1 block text-rose-800/50 sm:mt-0 sm:inline sm:before:content-['·_']">
+              Pull down to refresh
+            </span>
           </p>
         </div>
       </div>
 
-      <div className="mb-6 space-y-4">
+      <div className="mb-5 space-y-4 sm:mb-6">
         <SalesDateFilter
           range={range}
           customFrom={customFrom}
@@ -252,20 +285,20 @@ export function SalesDashboard() {
             type="button"
             onClick={onExportCsv}
             disabled={sales.length === 0}
-            className="rounded-full border border-rose-200 px-4 py-2 text-sm text-rose-900 transition hover:bg-rose-50 disabled:opacity-40"
+            className="min-h-11 rounded-full border border-rose-200 px-4 py-2.5 text-sm text-rose-900 transition hover:bg-rose-50 disabled:opacity-40"
           >
             Export CSV ({count})
           </button>
           <a
             href="/"
-            className="text-sm text-rose-800 underline-offset-4 hover:underline"
+            className="min-h-11 inline-flex items-center text-sm text-rose-800 underline-offset-4 hover:underline"
           >
             Back to website
           </a>
         </div>
       </div>
 
-      <div className="mb-6">
+      <div className="mb-5 sm:mb-6">
         <SalesSummaryTable
           sales={sales}
           saleButtons={saleButtons}
@@ -274,7 +307,7 @@ export function SalesDashboard() {
         />
       </div>
 
-      <div className="grid min-w-0 gap-6 sm:gap-8 lg:grid-cols-[minmax(0,360px)_1fr]">
+      <div className="grid min-w-0 gap-5 sm:gap-8 lg:grid-cols-[minmax(0,360px)_1fr]">
         <SalesForm saleButtons={saleButtons} onCreated={onCreated} className="hidden lg:block" />
         <div className="min-w-0">
           {error ? <p className="mb-4 text-sm text-rose-700">{error}</p> : null}

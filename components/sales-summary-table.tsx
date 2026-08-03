@@ -16,7 +16,7 @@ type Props = {
 };
 
 const amountInputClass =
-  "w-20 rounded-lg border border-rose-200 bg-white px-2 py-1 text-right text-sm outline-none focus:ring-2 focus:ring-rose-300";
+  "w-full max-w-[6.5rem] rounded-lg border border-rose-200 bg-white px-2 py-2 text-right text-base outline-none focus:ring-2 focus:ring-rose-300 sm:w-20 sm:py-1 sm:text-sm";
 
 function parseCommissionAmount(value: string) {
   const amount = Number(value);
@@ -70,6 +70,10 @@ export function SalesSummaryTable({
     [saleButtons, amountDrafts],
   );
 
+  const totalQty =
+    summary.rows.reduce((sum, row) => sum + row.quantity, 0) +
+    (summary.other?.quantity ?? 0);
+
   function updateAmountDraft(id: string, value: string) {
     setAmountDrafts((current) => ({ ...current, [id]: value }));
     setCommissionMessage("");
@@ -115,23 +119,26 @@ export function SalesSummaryTable({
   }
 
   return (
-    <section className="rounded-3xl border border-rose-100 bg-white/80 p-4 shadow-sm sm:p-6">
+    <section className="rounded-3xl border border-rose-100 bg-white/80 p-3.5 shadow-sm sm:p-6">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div className="min-w-0">
           <h2 className="font-serif text-xl text-rose-950 sm:text-2xl">
             Package totals
           </h2>
           <p className="mt-1 text-sm text-rose-800/70">
-            {formatRangeLabel(range)} · Commission = amount per unit × qty sold
+            {formatRangeLabel(range)}
+          </p>
+          <p className="mt-0.5 text-xs text-rose-800/55 sm:text-sm">
+            Commission = amount per unit × qty sold
           </p>
         </div>
         <button
           type="button"
           onClick={() => void saveCommissionAmounts()}
           disabled={!commissionDirty || savingCommission}
-          className="shrink-0 rounded-full border border-rose-200 px-4 py-2 text-sm text-rose-900 transition hover:bg-rose-50 disabled:opacity-40"
+          className="min-h-11 shrink-0 rounded-full border border-rose-200 px-4 py-2.5 text-sm text-rose-900 transition hover:bg-rose-50 disabled:opacity-40"
         >
-          {savingCommission ? "Saving…" : "Save commission amounts"}
+          {savingCommission ? "Saving…" : "Save commission"}
         </button>
       </div>
 
@@ -142,7 +149,86 @@ export function SalesSummaryTable({
         <p className="mt-3 text-sm text-rose-700">{commissionError}</p>
       ) : null}
 
-      <div className="mt-4 overflow-x-auto">
+      {/* Mobile cards — fits iPhone width without horizontal scroll */}
+      <div className="mt-4 space-y-2.5 sm:hidden">
+        {summary.rows.map((row) => (
+          <article
+            key={row.id}
+            className="rounded-2xl border border-rose-100 bg-rose-50/30 p-3"
+          >
+            <div className="flex items-start justify-between gap-3">
+              <div className="min-w-0">
+                <p className="font-medium leading-snug text-rose-950">{row.label}</p>
+                <p className="mt-1 text-xs text-rose-800/65">
+                  {formatMoney(row.unitPrice)} · Qty {row.quantity}
+                </p>
+              </div>
+              <p className="shrink-0 font-medium text-rose-950">
+                {formatMoney(row.total)}
+              </p>
+            </div>
+            <div className="mt-3 grid grid-cols-2 gap-2 border-t border-rose-100/80 pt-3">
+              <label className="block text-xs text-rose-800/70">
+                <span className="mb-1 block">Comm. / unit</span>
+                <input
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  inputMode="decimal"
+                  value={amountDrafts[row.id] ?? "0"}
+                  onChange={(event) =>
+                    updateAmountDraft(row.id, event.target.value)
+                  }
+                  className={amountInputClass}
+                  aria-label={`Commission per unit for ${row.label}`}
+                />
+              </label>
+              <div className="text-right">
+                <p className="text-xs text-rose-800/70">Commission</p>
+                <p className="mt-2 font-medium text-rose-950">
+                  {formatMoney(row.commissionTotal)}
+                </p>
+              </div>
+            </div>
+          </article>
+        ))}
+
+        {summary.other ? (
+          <article className="rounded-2xl border border-rose-100 bg-rose-50/30 p-3">
+            <div className="flex items-start justify-between gap-3">
+              <div>
+                <p className="font-medium text-rose-950">Other / manual</p>
+                <p className="mt-1 text-xs text-rose-800/65">
+                  Qty {summary.other.quantity}
+                </p>
+              </div>
+              <p className="font-medium text-rose-950">
+                {formatMoney(summary.other.total)}
+              </p>
+            </div>
+          </article>
+        ) : null}
+
+        <div className="rounded-2xl bg-rose-50/80 px-3 py-3">
+          <div className="flex items-center justify-between gap-3">
+            <div>
+              <p className="text-sm font-medium text-rose-950">Grand total</p>
+              <p className="mt-0.5 text-xs text-rose-800/65">Qty {totalQty}</p>
+            </div>
+            <div className="text-right">
+              <p className="font-serif text-lg text-rose-950">
+                {formatMoney(summary.grandTotal)}
+              </p>
+              <p className="mt-0.5 text-xs text-rose-800/70">
+                Comm. {formatMoney(summary.grandCommission)}
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Desktop table */}
+      <div className="mt-4 hidden overflow-x-auto sm:block">
         <table className="min-w-full text-left text-sm">
           <thead className="text-rose-900">
             <tr className="border-b border-rose-100">
@@ -204,8 +290,7 @@ export function SalesSummaryTable({
                 Grand total
               </td>
               <td className="px-3 py-3 text-right font-medium text-rose-950">
-                {summary.rows.reduce((sum, row) => sum + row.quantity, 0) +
-                  (summary.other?.quantity ?? 0)}
+                {totalQty}
               </td>
               <td className="px-3 py-3 text-right font-serif text-base text-rose-950 sm:text-lg">
                 {formatMoney(summary.grandTotal)}

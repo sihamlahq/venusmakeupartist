@@ -43,7 +43,7 @@ export function SalesDateFilter({
               key={preset.value}
               type="button"
               onClick={() => onPresetChange(preset.value)}
-              className={`rounded-full px-4 py-2.5 text-sm transition ${
+              className={`min-h-11 rounded-full px-3 py-2.5 text-sm leading-snug transition ${
                 range.preset === preset.value
                   ? "bg-rose-900 text-white"
                   : "border border-rose-200 text-rose-900 hover:bg-rose-50"
@@ -63,7 +63,7 @@ export function SalesDateFilter({
               type="date"
               value={customFrom}
               onChange={(event) => onCustomFromChange(event.target.value)}
-              className="w-full rounded-xl border border-rose-200 px-4 py-2 outline-none focus:ring-2 focus:ring-rose-300"
+              className="w-full min-h-11 rounded-xl border border-rose-200 px-4 py-2.5 text-base outline-none focus:ring-2 focus:ring-rose-300 sm:text-sm"
             />
           </label>
           <label className="text-sm">
@@ -72,7 +72,7 @@ export function SalesDateFilter({
               type="date"
               value={customTo}
               onChange={(event) => onCustomToChange(event.target.value)}
-              className="w-full rounded-xl border border-rose-200 px-4 py-2 outline-none focus:ring-2 focus:ring-rose-300"
+              className="w-full min-h-11 rounded-xl border border-rose-200 px-4 py-2.5 text-base outline-none focus:ring-2 focus:ring-rose-300 sm:text-sm"
             />
           </label>
         </div>

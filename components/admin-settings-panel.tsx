@@ -413,7 +413,9 @@ export function AdminSettingsPanel({
                         type="number"
                         min="0"
                         step="0.01"
-                        value={button.amount}
+                        inputMode="decimal"
+                        placeholder="0"
+                        value={button.amount === 0 ? "" : button.amount}
                         onChange={(event) =>
                           updateSaleButton(button.id, "amount", event.target.value)
                         }

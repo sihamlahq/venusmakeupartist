@@ -19,7 +19,7 @@ type Props = {
 };
 
 const inputClass =
-  "w-full rounded-lg border border-rose-200 px-2 py-1.5 text-sm outline-none focus:ring-1 focus:ring-rose-300";
+  "w-full rounded-lg border border-rose-200 px-2 py-2 text-base outline-none focus:ring-1 focus:ring-rose-300 sm:py-1.5 sm:text-sm";
 
 function SaleEditor({
   sale,
@@ -204,7 +204,7 @@ export function SalesTable({ sales, services, onDelete, onUpdate }: Props) {
         role="dialog"
         aria-modal="true"
         aria-labelledby="delete-sale-title"
-        className="w-full max-w-sm rounded-t-[2rem] border border-rose-100 bg-white p-5 shadow-2xl sm:rounded-[2rem] sm:p-6"
+        className="w-full max-w-sm rounded-t-[2rem] border border-rose-100 bg-white p-5 pb-[max(1.25rem,env(safe-area-inset-bottom))] shadow-2xl sm:rounded-[2rem] sm:p-6"
         onClick={(event) => event.stopPropagation()}
       >
         <h3

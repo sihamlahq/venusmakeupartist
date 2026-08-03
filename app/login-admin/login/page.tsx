@@ -12,7 +12,7 @@ export default async function AdminLoginPage({
   const passwordUpdated = params.passwordUpdated === "1";
 
   return (
-    <main className="flex min-h-screen items-center justify-center px-4 py-8 sm:py-10">
+    <main className="flex min-h-screen items-center justify-center px-4 py-8 pb-[max(2rem,env(safe-area-inset-bottom))] pt-[max(2rem,env(safe-area-inset-top))] sm:py-10">
       <div className="w-full max-w-md rounded-[2rem] border border-rose-100 bg-white/85 p-6 shadow-xl shadow-rose-100/50 sm:p-8">
         <p className="text-xs uppercase tracking-[0.2em] text-rose-700 sm:text-sm">
           Venus Admin
