@@ -25,7 +25,16 @@ import { SalesSummaryTable } from "@/components/sales-summary-table";
 import { SalesTable } from "@/components/sales-table";
 import { usePullToRefresh } from "@/hooks/use-pull-to-refresh";
 
+type AdminTab = "record" | "totals" | "ledger";
+
+const ADMIN_TABS: { id: AdminTab; label: string }[] = [
+  { id: "record", label: "Record" },
+  { id: "totals", label: "Totals" },
+  { id: "ledger", label: "Ledger" },
+];
+
 export function SalesDashboard() {
+  const [tab, setTab] = useState<AdminTab>("record");
   const [preset, setPreset] = useState<DateRangePreset>("today");
   const [customFrom, setCustomFrom] = useState("");
   const [customTo, setCustomTo] = useState("");
@@ -191,6 +200,11 @@ export function SalesDashboard() {
   const isTodayView = preset === "today";
   const showPullIndicator = pullDistance > 8 || refreshing;
 
+  function switchTab(next: AdminTab) {
+    setTab(next);
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }
+
   return (
     <div className="admin-safe-pad mx-auto w-full min-w-0 max-w-6xl">
       {showPullIndicator ? (
@@ -211,7 +225,7 @@ export function SalesDashboard() {
         </div>
       ) : null}
 
-      <div className="mb-5 flex items-start justify-between gap-3 sm:mb-8">
+      <div className="mb-4 flex items-start justify-between gap-3 sm:mb-6">
         <div className="min-w-0 flex-1">
           <p className="text-xs uppercase tracking-[0.2em] text-rose-700 sm:text-sm">
             Live sales ledger
@@ -236,10 +250,8 @@ export function SalesDashboard() {
         </div>
       </div>
 
-      <SalesForm saleButtons={saleButtons} onCreated={onCreated} className="mb-5 lg:hidden" />
-
-      <div className="mb-5 grid grid-cols-2 gap-3 sm:mb-8 sm:gap-4 md:grid-cols-3">
-        <div className="rounded-3xl border border-rose-100 bg-white/80 p-3.5 shadow-sm sm:p-6">
+      <div className="mb-4 grid grid-cols-2 gap-3 sm:mb-5 sm:gap-4 md:grid-cols-3">
+        <div className="rounded-3xl border border-rose-100 bg-white/80 p-3.5 shadow-sm sm:p-5">
           <p className="text-xs text-rose-800/70 sm:text-sm">
             {isTodayView ? "Today's total" : "Period total"}
           </p>
@@ -247,7 +259,7 @@ export function SalesDashboard() {
             {formatMoney(total)}
           </p>
         </div>
-        <div className="rounded-3xl border border-rose-100 bg-white/80 p-3.5 shadow-sm sm:p-6">
+        <div className="rounded-3xl border border-rose-100 bg-white/80 p-3.5 shadow-sm sm:p-5">
           <p className="text-xs text-rose-800/70 sm:text-sm">
             {isTodayView ? "Today's sales" : "Sales count"}
           </p>
@@ -255,7 +267,7 @@ export function SalesDashboard() {
             {count}
           </p>
         </div>
-        <div className="col-span-2 rounded-3xl border border-rose-100 bg-white/80 p-3.5 shadow-sm sm:p-6 md:col-span-1">
+        <div className="col-span-2 rounded-3xl border border-rose-100 bg-white/80 p-3.5 shadow-sm sm:p-5 md:col-span-1">
           <p className="text-xs text-rose-800/70 sm:text-sm">Live status</p>
           <p className="mt-1.5 font-serif text-xl leading-tight text-rose-950 sm:mt-2 sm:text-3xl">
             {loading || refreshing ? "Syncing" : "Live"}
@@ -271,45 +283,100 @@ export function SalesDashboard() {
         </div>
       </div>
 
-      <div className="mb-5 space-y-4 sm:mb-6">
-        <SalesDateFilter
-          range={range}
-          customFrom={customFrom}
-          customTo={customTo}
-          onPresetChange={onPresetChange}
-          onCustomFromChange={setCustomFrom}
-          onCustomToChange={setCustomTo}
-        />
-        <div className="flex flex-wrap items-center gap-3">
-          <button
-            type="button"
-            onClick={onExportCsv}
-            disabled={sales.length === 0}
-            className="min-h-11 rounded-full border border-rose-200 px-4 py-2.5 text-sm text-rose-900 transition hover:bg-rose-50 disabled:opacity-40"
-          >
-            Export CSV ({count})
-          </button>
-          <a
-            href="/"
-            className="min-h-11 inline-flex items-center text-sm text-rose-800 underline-offset-4 hover:underline"
-          >
-            Back to website
-          </a>
+      <div
+        role="tablist"
+        aria-label="Admin sections"
+        className="mb-4 grid grid-cols-3 gap-1.5 rounded-2xl border border-rose-100 bg-white/80 p-1.5 shadow-sm"
+      >
+        {ADMIN_TABS.map((item) => {
+          const active = tab === item.id;
+          const badge =
+            item.id === "ledger" && count > 0 ? ` ${count}` : "";
+
+          return (
+            <button
+              key={item.id}
+              type="button"
+              role="tab"
+              aria-selected={active}
+              onClick={() => switchTab(item.id)}
+              className={`min-h-11 rounded-xl px-2 py-2.5 text-sm font-medium transition ${
+                active
+                  ? "bg-rose-900 text-white shadow-sm"
+                  : "text-rose-900 hover:bg-rose-50"
+              }`}
+            >
+              {item.label}
+              {badge}
+            </button>
+          );
+        })}
+      </div>
+
+      {tab !== "record" ? (
+        <div className="mb-4 space-y-3 sm:mb-5">
+          <SalesDateFilter
+            range={range}
+            customFrom={customFrom}
+            customTo={customTo}
+            onPresetChange={onPresetChange}
+            onCustomFromChange={setCustomFrom}
+            onCustomToChange={setCustomTo}
+          />
+          <div className="flex flex-wrap items-center gap-3">
+            <button
+              type="button"
+              onClick={onExportCsv}
+              disabled={sales.length === 0}
+              className="min-h-11 rounded-full border border-rose-200 px-4 py-2.5 text-sm text-rose-900 transition hover:bg-rose-50 disabled:opacity-40"
+            >
+              Export CSV ({count})
+            </button>
+            <a
+              href="/"
+              className="min-h-11 inline-flex items-center text-sm text-rose-800 underline-offset-4 hover:underline"
+            >
+              Back to website
+            </a>
+          </div>
         </div>
-      </div>
+      ) : null}
 
-      <div className="mb-5 sm:mb-6">
-        <SalesSummaryTable
-          sales={sales}
-          saleButtons={saleButtons}
-          range={range}
-          onSaleButtonsUpdated={setSaleButtons}
-        />
-      </div>
+      {tab === "record" ? (
+        <div role="tabpanel" className="min-w-0">
+          <SalesForm saleButtons={saleButtons} onCreated={onCreated} />
+          <div className="mt-4 flex flex-wrap gap-2">
+            <button
+              type="button"
+              onClick={() => switchTab("ledger")}
+              className="min-h-11 rounded-full border border-rose-200 px-4 py-2.5 text-sm text-rose-900 hover:bg-rose-50"
+            >
+              View ledger ({count})
+            </button>
+            <button
+              type="button"
+              onClick={() => switchTab("totals")}
+              className="min-h-11 rounded-full border border-rose-200 px-4 py-2.5 text-sm text-rose-900 hover:bg-rose-50"
+            >
+              Package totals
+            </button>
+          </div>
+        </div>
+      ) : null}
 
-      <div className="grid min-w-0 gap-5 sm:gap-8 lg:grid-cols-[minmax(0,360px)_1fr]">
-        <SalesForm saleButtons={saleButtons} onCreated={onCreated} className="hidden lg:block" />
-        <div className="min-w-0">
+      {tab === "totals" ? (
+        <div role="tabpanel" className="min-w-0">
+          <SalesSummaryTable
+            sales={sales}
+            saleButtons={saleButtons}
+            range={range}
+            onSaleButtonsUpdated={setSaleButtons}
+          />
+        </div>
+      ) : null}
+
+      {tab === "ledger" ? (
+        <div role="tabpanel" className="min-w-0">
           {error ? <p className="mb-4 text-sm text-rose-700">{error}</p> : null}
           <SalesTable
             sales={sales}
@@ -318,7 +385,7 @@ export function SalesDashboard() {
             onUpdate={onUpdate}
           />
         </div>
-      </div>
+      ) : null}
     </div>
   );
 }
